@@ -1,3 +1,3 @@
-New-Ray-Marcher
+Basic-Ray-Tracer-V2
 
 IN PROGRESS
