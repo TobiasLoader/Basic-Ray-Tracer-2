@@ -50,17 +50,55 @@ var mode;
 
 var ld;
 var space;
+var spaceAfter;
 var left;
 var right;
 var keyDPlus;
 var keyDMinus;
+
+var firstSceneClicked;
+var afterFirstClicked;
+
+var intructionPressed;
+
+var f;
 /*
 
 var effectiveA;
 var effectiveV;
 */
-    
+
+function firstScene(){
+	background(255);
+	textFont(f[0],window.innerWidth/25);
+	fill(0);
+	noStroke();
+	textAlign(CENTER,CENTER);
+	text('Welcome to Basic Ray Tracer 2',window.innerWidth/2,5*window.innerHeight/20)
+	var welcomeWidth = textWidth('Welcome to Basic Ray Tracer 2');
+	textSize(window.innerWidth/55);
+	text('This is my second attempt at building a ray tracer (currently in beta). In addition to incorporating a new rendering algorithm, it also includes a new GUI feature: a selectable birds-eye view of the spheres in the scene prior to rendering, which enables the user to choose the exact viewing aspect of their rendered image.',window.innerWidth/2-welcomeWidth/2,7*window.innerHeight/20,welcomeWidth);
+	
+	
+	fill(85);
+	stroke(150);
+	rect(window.innerWidth/2-125,13*window.innerHeight/20-20,250,40,2);
+	fill(255);
+	noStroke();
+	text("Let's Get Tracing...",window.innerWidth/2-welcomeWidth/2,13*window.innerHeight/20,welcomeWidth);
+	if (mouseX>(window.innerWidth/2 - 125) && mouseX<(window.innerWidth/2+125) && mouseY>13*window.innerHeight/20-20 && mouseY<13*window.innerHeight/20+20){	
+		cursor('pointer');
+	} else {
+		cursor('default');
+	}
+}
+
+
 function setup() {
+	intructionPressed = false;
+	firstSceneClicked = false;
+	afterFirstClicked = false;
+	
 	W = window.innerWidth;
 	H = window.innerHeight;
 	canvas = createCanvas(W, H);
@@ -68,17 +106,10 @@ function setup() {
 	origin = [width/2,height/2];
 	
 	colour = {red:color(191, 74, 74), blue:color(85, 152, 224), green:color(21, 212, 148), grey:color(138, 138, 138), darkgrey:color(68, 68, 68), lightblue:color(60, 204, 230), black:color(23, 23, 23), purple:color(194, 24, 194), yellow:color(235, 215, 0), white:color(255, 255, 255)};
-
-
-	fill(54, 53, 54);
-	textFont('Avenir',23);
-	textAlign(CENTER,CENTER);
-	text('~ CLICK ~',width/2,height/2);
 	
 	translate(origin[0], height-origin[1]);
-	
 	scale(1,-1);
-
+	
 	shapes = {'s':[]};
 
 	n = 40;
@@ -134,10 +165,73 @@ function setup() {
 	
 	Dz = (H/2)/tan((angleHMax-angleHMin)/2);
 	
+	f = ["Quicksand","PlayFair Display"];
 	
 	mode = 'grid'; // 'dots' or 'grid' (grid is in developement...)
 	
 	space = false;
+	spaceAfter = false;
+}
+
+function draw(){
+	if (!firstSceneClicked){
+		firstScene();
+	} else{
+		translate(origin[0], height-origin[1]);
+		scale(1,-1);
+		if (!afterFirstClicked){
+			background(colour.white);
+		    Xcoor = mouseX-origin[0];
+		    Ycoor = origin[1]-mouseY;
+			partialGraphic = findScene(vA);
+			drawScene();
+		}
+		afterFirstClicked = true;
+		if (spaceAfter){
+			background(colour.black);
+			if (mode==='grid'){
+				pixMatrix = [];
+				for (var h=0; h<floor(height/qual); h+=1){
+					pixMatrix.push([]);
+					for (var w=0; w<floor(width/qual); w+=1){
+						pixMatrix[h].push([0,colour.black]);
+					}
+				}
+		// 			print(pixMatrix);
+			}
+			for (var va=angleVMin; va<angleVMax; va+=angleVDelta){
+				partialGraphic = findScene(va);
+				formPixMatrix(va);
+		    }
+		    if (mode === 'grid'){
+		// 		    print(pixMatrix);
+			    drawScene2();
+			    print(pixMatrix);
+		    }
+		}
+		if (space){
+			spaceAfter = true;
+			space = false;
+			fill(0);
+			stroke(6, 81, 156);
+			strokeWeight(1);
+			textSize(18);
+			scale(1,-1);
+			textAlign(CENTER,BOTTOM);
+			text('PLEASE WAIT A FEW SECONDS, YOUR IMAGE IS NOW RENDERING...',0,H/2-20);
+			scale(1,-1);
+		}
+	}
+}
+
+function popUp(MESSAGE,priority){
+	textSize(12);
+	fill(150,200,250,100);
+	noStroke();
+	rect(33-W/2,33-H/2+(priority-1)*100 + 10,200,45,2);
+	fill(6, 81, 156);
+	textAlign(CENTER,CENTER);
+	text(MESSAGE,33-W/2+5,66-H/2+(priority-1)*100,200-10);
 }
 
 function calcAngles(){
@@ -274,6 +368,12 @@ function drawScene(){
         background(43, 43, 43);
     }
     
+    if (!intructionPressed){
+		scale(1,-1);
+		popUp("Press the 'I' Key for Instructions",1);
+		scale(1,-1);
+	}
+			
     strokeWeight(4);
     stroke(107, 107, 107);
     point(0,0);
@@ -412,6 +512,7 @@ function drawScene2(){
 
 function keyPressed(){
 	if (keyCode===32){
+		var timeNow = millis();
 		space = true;
 	} else if (keyCode===37){
 		left = true;
@@ -423,6 +524,30 @@ function keyPressed(){
 	}
 	if (keyCode===189){
 		keyDMinus = true;
+	}
+	if (keyCode===73){alert("Basic Ray Tracer 2: INSTRUCTIONS\n\n1. Firstly, set up the viewing aspect of your rendered scene:\n\n Left mouse-click positions camera\n Tapping left arrow key rotates camera anti-clockwise\n Tapping right arrow key rotates camera clockwise\n\n2. You can now start the rendering process by:\n\nHitting the SpaceBar\n\nNB: There may be delay of a few seconds before the image appears. Please do not click your mouse button until this has completed.\n");
+	    intructionPressed = true;
+    }
+    
+	if (!space) {
+	    if (left) {
+			angleHMin += 5;
+			angleHMax +=5;
+		} else if (right){
+			angleHMin -= 5;
+			angleHMax -=5;
+		}
+		
+		if (keyDPlus) {
+			Dz += 10;
+			calcAngles();
+		} else if (keyDMinus){
+			Dz -= 10;
+			calcAngles();
+		}
+		background(colour.white);
+		partialGraphic = findScene(vA);
+		drawScene();
 	}
 }
 function keyReleased(){
@@ -451,56 +576,29 @@ function mouseClicked(){
 		drawScene2(vA);
 	}
 */
-	if (space){
-		
-		background(colour.black);
-		if (mode==='grid'){
-			pixMatrix = [];
-			for (var h=0; h<floor(height/qual); h+=1){
-				pixMatrix.push([]);
-				for (var w=0; w<floor(width/qual); w+=1){
-					pixMatrix[h].push([0,colour.black]);
-				}
-			}
-// 			print(pixMatrix);
-		}
-		for (var va=angleVMin; va<angleVMax; va+=angleVDelta){
-			partialGraphic = findScene(va);
-			formPixMatrix(va);
-	    }
-	    if (mode === 'grid'){
-// 		    print(pixMatrix);
-		    drawScene2();
-		    print(pixMatrix);
-	    }
-	} else {
-		if (left) {
-			angleHMin += 5;
-			angleHMax +=5;
-		} else if (right){
-			angleHMin -= 5;
-			angleHMax -=5;
-		}
-		
-		if (keyDPlus) {
-			Dz += 10;
-			calcAngles();
-		} else if (keyDMinus){
-			Dz -= 10;
-			calcAngles();
-		}
+	if (firstSceneClicked){
 		background(colour.white);
 	    Xcoor = mouseX-origin[0];
 	    Ycoor = origin[1]-mouseY;
 		partialGraphic = findScene(vA);
 		drawScene();
-    }
+	}
+	
+	 
+    if (mouseX>(window.innerWidth/2 - 125) && mouseX<(window.innerWidth/2+125) && mouseY>13*window.innerHeight/20-20 && mouseY<13*window.innerHeight/20+20){
+		firstSceneClicked = true;
+	}
 };
 
 window.onresize = function() {
   resizeCanvas(windowWidth, windowHeight);
   W = windowWidth;
-  H = windowHeight
+  H = windowHeight;
+  background(colour.white);
+Xcoor = mouseX-origin[0];
+Ycoor = origin[1]-mouseY;
+partialGraphic = findScene(vA);
+drawScene();
 };
 
 
